@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
+		<style>
+			body {
+				background-color: #eee;
+				white-space: pre;
+				font-family: monospace;
+			}
+
+			.dropzone {
+				width: 300px;
+				height: 300px;
+				margin: 0 auto;
+				display: block;
+				border: 2px solid black;
+				border-radius: 5px;
+				background-color: lightYellow;
+				padding: 1em;
+				font-family: sans-serif;
+				text-align: center;
+				white-space: normal;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="dropzone">Drag 'n' Drop file here to convert GFF3 to GTF2</div>
+		<script>
+			// Treat LHS as a nonterminal that maps deterministically to all RHS
+			var mappings = {
+				"Parent": [ "gene_id", "transcript_id" ]
+			};
+			
+			$(document).on('drop', '.dropzone', function (e) {
+				// stop the browser from loading the file in the window
+				e.stopPropagation();
+				e.preventDefault();
+				
+				var $dropzone = $(this);
+				$dropzone.text("thinking...");
+
+				var reader = new FileReader();
+				reader.readAsText(e.originalEvent.dataTransfer.files[0]);
+				
+				reader.onload = function () { 
+					var rows = reader.result
+						// split into rows along newline characters
+						.split('\n')
+						.map(function (row) {
+							// skip comments
+							if (row[0] === '#') return row;
+
+							// split into columns along tab characters
+							row = row.split('\t');
+							
+							// the key-value pair properties are the last column
+							var props = row[8] || "";
+							row = row.slice(0, 8);
+							
+							props = props
+								// KVPs colon delimited
+								.split(';')
+								.reduce(function (memo, curr) {
+									// K/V are equals-delineated
+									var x = curr.split('=');
+									// finish conversion of KVP string into an objcet
+									memo[x[0]] = x[1];
+									return memo;
+								}, {});
+							
+							props = Object.getOwnPropertyNames(props)
+								.reduce(function (memo, prop) {
+									// create an object of the properties with their new Key names
+									(mappings[prop] || [])
+										.forEach(function (newProp) {
+											memo[newProp] = props[prop];
+										});
+									return memo;
+								}, {});
+							
+							row.push(Object.getOwnPropertyNames(props)
+								.map(function (prop) {
+									// write back to a KVP string in the GTF2 format
+									return prop + " \"" + props[prop] + "\"";
+								})
+								.join('; '));
+							
+							// re-assemble the columns
+							row = row.join('\t');
+							return row;
+						});
+					
+					// re-assemble the rows
+					rows = rows.join('\n');
+					document.body.textContent = rows;
+				}
+			});
+			$(document).on('dragover', '.dropzone', function (e) {
+				e.stopPropagation();
+				e.preventDefault();
+				e.originalEvent.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+			});
+		</script>
+	</body>
+</html>
