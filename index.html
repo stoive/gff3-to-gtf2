@@ -96,7 +96,7 @@
 					// re-assemble the rows
 					rows = rows.join('\n');
 					var blob = new Blob([rows], { type: 'text/plain' });
-					var $a = $("<a href=''>Download</a>");
+					var $a = $("<a href=''>Right-click to download</a>");
 					$a.attr('href', window.URL.createObjectURL(blob));
 					$dropzone.empty().append($a);
 				}
