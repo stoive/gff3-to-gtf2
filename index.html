@@ -62,10 +62,12 @@
 								// KVPs colon delimited
 								.split(';')
 								.reduce(function (memo, curr) {
+									// evil nonprintables!!
+									if (!(curr || "").trim()) return memo;
 									// K/V are equals-delineated
 									var x = curr.split('=');
 									// finish conversion of KVP string into an objcet
-									memo[x[0]] = x[1];
+									memo[x[0]] = x[1].trim();
 									return memo;
 								}, {});
 							
@@ -93,7 +95,10 @@
 					
 					// re-assemble the rows
 					rows = rows.join('\n');
-					document.body.textContent = rows;
+					var blob = new Blob([rows], { type: 'text/plain' });
+					var $a = $("<a href=''>Download</a>");
+					$a.attr('href', window.URL.createObjectURL(blob));
+					$dropzone.empty().append($a);
 				}
 			});
 			$(document).on('dragover', '.dropzone', function (e) {
